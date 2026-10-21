@@ -33,9 +33,22 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local IDE / AI tooling (keep on machine, do not publish)
+.agents/
+.claude/
+.cursor/
+.vscode/
+.windsurf/
+skills-lock.json
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/generated/prisma
+
+# keep migrations local only (not published)
+/prisma/migrations/
