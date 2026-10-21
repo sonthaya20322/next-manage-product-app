@@ -84,3 +84,58 @@ export async function GET(request: Request) {
     );
   }
 }
+
+// Handle การแก้ไขข้อมูลในตาราง (PUT -> Update) แต่มีเงื่อนไขที่ไม่ใช่ PK-id
+export async function PUT(request: Request) {
+  //สร้างตัวแปรเก็บข้อมูล query string ที่ส่งมา
+  const url = new URL(request.url);
+  const proQuantity = Number(url.searchParams.get("proQuantity"));
+
+  try {
+    // แก้ไข เงื่อนไขคือ proQuantity มากกว่า 20 แล้วแก้ proDescription เป็น เปิดขาย
+    const result = await prisma.product.updateMany({
+      where: {
+        proQuantity: {
+          gt: proQuantity,
+        },
+      },
+      data: {
+        proDescription: "เปิดขาย",
+      },
+    });
+
+    return Response.json(result, { status: 200 });
+  } catch (error) {
+    //เกิดข้อผิดพลาดในการเพิ่มข้อมูล
+    console.error("Failed for: ", error);
+    return Response.json(
+      { message: "พบข้อผิดพลาดในการแก้ไขข้อมูล" },
+      { status: 500 },
+    );
+  }
+}
+
+// Handle การลบข้อมูลในตาราง (DELETE -> Delete ) แต่มีเงื่อนไขที่ไม่ใช่ PK-id
+export async function DELETE(request: Request) {
+  //สร้างตัวแปรเก็บข้อมูล query string ที่ส่งมา
+  const url = new URL(request.url);
+  const proQuantity = Number(url.searchParams.get("proQuantity"));
+
+  try {
+    // แก้ไข เงื่อนไขคือ proQuantity มากกว่า 20 แล้วแก้ proDescription เป็น เปิดขาย
+    const result = await prisma.product.deleteMany({
+      where: {
+        proQuantity: { gte: proQuantity },
+      },
+    });
+
+    return Response.json(result, { status: 200 });
+  } catch (error) {
+    //เกิดข้อผิดพลาดในการเพิ่มข้อมูล
+    console.error("Failed for: ", error);
+    return Response.json(
+      { message: "พบข้อผิดพลาดในการลบข้อมูล" },
+      { status: 500 },
+    );
+  }
+}
