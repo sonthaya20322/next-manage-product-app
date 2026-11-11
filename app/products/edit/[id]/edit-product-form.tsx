@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { showError, showSuccess, showWarning } from "@/lib/swal";
 
 export default function EditProductForm({ id }: { id: string }) {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function EditProductForm({ id }: { id: string }) {
       try {
         const res = await fetch(`/api/products/${id}`);
         if (!res.ok) {
-          alert("ไม่พบข้อมูลสินค้า");
+          await showWarning("ไม่พบสินค้า", "กลับไปหน้ารายการ");
           router.push("/");
           return;
         }
@@ -32,7 +33,7 @@ export default function EditProductForm({ id }: { id: string }) {
         setProDescription(data.proDescription ?? "");
       } catch (error) {
         console.error("Failed for: ", error);
-        alert("โหลดข้อมูลไม่สำเร็จ");
+        await showError("โหลดไม่สำเร็จ", "ลองใหม่อีกครั้ง");
         router.push("/");
       } finally {
         setLoading(false);
@@ -59,15 +60,16 @@ export default function EditProductForm({ id }: { id: string }) {
       });
 
       if (!res.ok) {
-        alert("แก้ไขสินค้าไม่สำเร็จ");
+        await showError("แก้ไขไม่สำเร็จ", "ลองใหม่อีกครั้ง");
         return;
       }
 
+      await showSuccess("แก้ไขสำเร็จ", `อัปเดตสินค้า "${proName}" แล้ว`);
       router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Failed for: ", error);
-      alert("แก้ไขสินค้าไม่สำเร็จ");
+      await showError("แก้ไขไม่สำเร็จ", "ลองใหม่อีกครั้ง");
     } finally {
       setSaving(false);
     }

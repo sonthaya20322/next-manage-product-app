@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { showError, showSuccess } from "@/lib/swal";
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -43,16 +44,17 @@ export default function AddProductPage() {
       });
 
       if (!res.ok) {
-        alert("เพิ่มสินค้าไม่สำเร็จ");
+        await showError("เพิ่มไม่สำเร็จ", "ลองใหม่อีกครั้ง");
         return;
       }
 
       resetForm();
+      await showSuccess("เพิ่มสำเร็จ", `บันทึกสินค้า "${proName}" แล้ว`);
       router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Failed for: ", error);
-      alert("เพิ่มสินค้าไม่สำเร็จ");
+      await showError("เพิ่มไม่สำเร็จ", "ลองใหม่อีกครั้ง");
     } finally {
       setSaving(false);
     }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { confirmDelete, showError, showSuccess } from "@/lib/swal";
 
 type Product = {
   id: number;
@@ -11,11 +12,30 @@ type Product = {
   proDescription: string;
 };
 
+/** สถานะจากข้อความรายละเอียด — ไม่พร้อมมาก่อน พร้อมรองลงมา นอกนั้นปกติ */
+function getDescriptionStatus(description: string) {
+  const text = description.trim();
+  const notReadyKeywords = ["ยังไม่", "ไม่พร้อม", "ปิดขาย", "หมด"];
+  const readyKeywords = ["พร้อมขาย", "พร้อมจำหน่าย", "เปิดขาย"];
+
+  if (notReadyKeywords.some((word) => text.includes(word))) {
+    return "not-ready" as const;
+  }
+  if (readyKeywords.some((word) => text.includes(word))) {
+    return "ready" as const;
+  }
+  return "neutral" as const;
+}
+
+const descriptionToneClass = {
+  ready: "text-green-700 font-medium",
+  "not-ready": "text-red-600 font-medium",
+  neutral: "text-black",
+} as const;
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -35,25 +55,23 @@ export default function Home() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
+  const handleDelete = async (product: Product) => {
+    const result = await confirmDelete(product.proName);
+    if (!result.isConfirmed) return;
 
-    setDeleting(true);
     try {
-      const res = await fetch(`/api/products/${pendingDelete.id}`, {
+      const res = await fetch(`/api/products/${product.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
-        alert("ลบสินค้าไม่สำเร็จ");
+        await showError("ลบไม่สำเร็จ", "ลองใหม่อีกครั้ง");
         return;
       }
-      setPendingDelete(null);
+      await showSuccess("ลบสำเร็จ", `ลบสินค้า "${product.proName}" แล้ว`);
       await fetchProducts();
     } catch (error) {
       console.error("Failed for: ", error);
-      alert("ลบสินค้าไม่สำเร็จ");
-    } finally {
-      setDeleting(false);
+      await showError("ลบไม่สำเร็จ", "ลองใหม่อีกครั้ง");
     }
   };
 
@@ -88,7 +106,7 @@ export default function Home() {
                 </th>
                 <th className="border border-gray-300 px-3 py-2">ราคา</th>
                 <th className="border border-gray-300 px-3 py-2">จำนวน</th>
-                <th className="border border-gray-300 px-3 py-2 text-left">
+                <th className="border border-gray-300 px-3 py-2 text-left min-w-[140px]">
                   รายละเอียด
                 </th>
                 <th className="border border-gray-300 px-3 py-2">หมายเหตุ</th>
@@ -96,9 +114,7 @@ export default function Home() {
             </thead>
             <tbody>
               {products.map((product) => {
-                const isReady =
-                  product.proDescription.includes("พร้อมขาย") &&
-                  !product.proDescription.includes("ยังไม่");
+                const status = getDescriptionStatus(product.proDescription);
 
                 return (
                   <tr key={product.id}>
@@ -112,9 +128,7 @@ export default function Home() {
                       {product.proQuantity}
                     </td>
                     <td
-                      className={`border border-gray-300 px-3 py-2 ${
-                        isReady ? "text-black" : "text-orange-700"
-                      }`}
+                      className={`border border-gray-300 px-3 py-2 whitespace-nowrap ${descriptionToneClass[status]}`}
                     >
                       {product.proDescription}
                     </td>
@@ -128,7 +142,7 @@ export default function Home() {
                       {" | "}
                       <button
                         type="button"
-                        onClick={() => setPendingDelete(product)}
+                        onClick={() => handleDelete(product)}
                         className="text-blue-600 hover:underline cursor-pointer"
                       >
                         ลบ
@@ -141,35 +155,6 @@ export default function Home() {
           </table>
         </div>
       )}
-
-      {pendingDelete ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded bg-white p-6 shadow-lg">
-            <p className="mb-2 text-lg font-bold">ยืนยันการลบ</p>
-            <p className="mb-6">
-              ต้องการลบสินค้า &quot;{pendingDelete.proName}&quot; หรือไม่?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPendingDelete(null)}
-                disabled={deleting}
-                className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300 disabled:opacity-50"
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                disabled={deleting}
-                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleting ? "กำลังลบ..." : "ลบ"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }
