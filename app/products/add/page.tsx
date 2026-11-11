@@ -1,0 +1,116 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+
+export default function AddProductPage() {
+  const router = useRouter();
+  const [proName, setProName] = useState("");
+  const [proPrice, setProPrice] = useState("");
+  const [proQuantity, setProQuantity] = useState("");
+  const [proDescription, setProDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proName,
+          proPrice: Number(proPrice),
+          proQuantity: Number(proQuantity),
+          proDescription,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("เพิ่มสินค้าไม่สำเร็จ");
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed for: ", error);
+      alert("เพิ่มสินค้าไม่สำเร็จ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="w-[75%] mx-auto mt-8 mb-8">
+      <div className="flex justify-center mb-8">
+        <p className="text-2xl font-bold">Add Product</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-4">
+        <div>
+          <label className="block mb-1 font-medium">ชื่อสินค้า</label>
+          <input
+            type="text"
+            value={proName}
+            onChange={(e) => setProName(e.target.value)}
+            required
+            className="w-full border border-gray-300 px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium">ราคา</label>
+          <input
+            type="number"
+            step="any"
+            value={proPrice}
+            onChange={(e) => setProPrice(e.target.value)}
+            required
+            className="w-full border border-gray-300 px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium">จำนวน</label>
+          <input
+            type="number"
+            value={proQuantity}
+            onChange={(e) => setProQuantity(e.target.value)}
+            required
+            className="w-full border border-gray-300 px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium">รายละเอียด</label>
+          <input
+            type="text"
+            value={proDescription}
+            onChange={(e) => setProDescription(e.target.value)}
+            required
+            className="w-full border border-gray-300 px-3 py-2 rounded"
+          />
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-60"
+          >
+            {saving ? "กำลังบันทึก..." : "บันทึก"}
+          </button>
+          <Link
+            href="/"
+            className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+          >
+            ยกเลิก
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
+}
