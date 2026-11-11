@@ -1,69 +1,139 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+
+type Product = {
+  id: number;
+  proName: string;
+  proPrice: number;
+  proQuantity: number;
+  proDescription: string;
+};
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed for: ", error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const handleDelete = async (id: number) => {
+    const ok = confirm("ต้องการลบสินค้านี้หรือไม่?");
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("ลบสินค้าไม่สำเร็จ");
+        return;
+      }
+      await fetchProducts();
+    } catch (error) {
+      console.error("Failed for: ", error);
+      alert("ลบสินค้าไม่สำเร็จ");
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      {/* แสดงชื่อหน้าเพจ */}
+      <div className="flex justify-center mt-8 mb-8">
+        <p className="text-2xl font-bold">Show All Product</p>
+      </div>
+
+      {/* แสดงปุ่มเปิดไปหน้าเพิ่มสินค้า */}
+      <div className="flex justify-end w-[75%] mx-auto mb-8">
+        <Link
+          href="/products/add"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          เพิ่มสินค้า
+        </Link>
+      </div>
+
+      {/* แสดงรายการสินค้าในรูปแบบตาราง โดยแต่ละรายการจะมีลิงค์ไปหน้าแก้ไขสินค้า และปุ่มลบสินค้า */}
+      {/* ก่อนแสดงตารางตรวจสอบว่าได้โหลดข้อมูลมาครบแล้วหรือยัง */}
+      {loading ? (
+        <p className="text-center">กำลังโหลดข้อมูล...</p>
+      ) : (
+        <div className="flex justify-center w-[75%] mx-auto">
+          <table className="w-full border border-gray-300 border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-3 py-2 text-left">
+                  ชื่อสินค้า
+                </th>
+                <th className="border border-gray-300 px-3 py-2">ราคา</th>
+                <th className="border border-gray-300 px-3 py-2">จำนวน</th>
+                <th className="border border-gray-300 px-3 py-2 text-left">
+                  รายละเอียด
+                </th>
+                <th className="border border-gray-300 px-3 py-2">หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => {
+                const isReady =
+                  product.proDescription.includes("พร้อมขาย") &&
+                  !product.proDescription.includes("ยังไม่");
+
+                return (
+                  <tr key={product.id}>
+                    <td className="border border-gray-300 px-3 py-2">
+                      {product.proName}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">
+                      {product.proPrice}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">
+                      {product.proQuantity}
+                    </td>
+                    <td
+                      className={`border border-gray-300 px-3 py-2 ${
+                        isReady ? "text-black" : "text-orange-700"
+                      }`}
+                    >
+                      {product.proDescription}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">
+                      <Link
+                        href={`/products/edit/${product.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        แก้ไข
+                      </Link>
+                      {" | "}
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(product.id)}
+                        className="text-blue-600 hover:underline cursor-pointer"
+                      >
+                        ลบ
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+    </>
   );
 }
