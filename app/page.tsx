@@ -14,6 +14,8 @@ type Product = {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -33,20 +35,25 @@ export default function Home() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleDelete = async (id: number) => {
-    const ok = confirm("ต้องการลบสินค้านี้หรือไม่?");
-    if (!ok) return;
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
 
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/${pendingDelete.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         alert("ลบสินค้าไม่สำเร็จ");
         return;
       }
+      setPendingDelete(null);
       await fetchProducts();
     } catch (error) {
       console.error("Failed for: ", error);
       alert("ลบสินค้าไม่สำเร็จ");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -121,7 +128,7 @@ export default function Home() {
                       {" | "}
                       <button
                         type="button"
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => setPendingDelete(product)}
                         className="text-blue-600 hover:underline cursor-pointer"
                       >
                         ลบ
@@ -134,6 +141,35 @@ export default function Home() {
           </table>
         </div>
       )}
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded bg-white p-6 shadow-lg">
+            <p className="mb-2 text-lg font-bold">ยืนยันการลบ</p>
+            <p className="mb-6">
+              ต้องการลบสินค้า &quot;{pendingDelete.proName}&quot; หรือไม่?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300 disabled:opacity-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "กำลังลบ..." : "ลบ"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

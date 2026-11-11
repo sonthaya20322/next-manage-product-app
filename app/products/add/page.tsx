@@ -1,16 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function AddProductPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [proName, setProName] = useState("");
   const [proPrice, setProPrice] = useState("");
   const [proQuantity, setProQuantity] = useState("");
   const [proDescription, setProDescription] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const resetForm = () => {
+    setProName("");
+    setProPrice("");
+    setProQuantity("");
+    setProDescription("");
+    setSaving(false);
+  };
+
+  // เคลียร์ฟอร์มทุกครั้งที่เข้าหน้าเพิ่มสินค้า (กันค้างค่าจากรอบก่อน)
+  useEffect(() => {
+    resetForm();
+  }, [pathname]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,6 +47,7 @@ export default function AddProductPage() {
         return;
       }
 
+      resetForm();
       router.push("/");
       router.refresh();
     } catch (error) {
@@ -49,7 +64,12 @@ export default function AddProductPage() {
         <p className="text-2xl font-bold">Add Product</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-4">
+      <form
+        key="add-product-form"
+        onSubmit={handleSubmit}
+        autoComplete="off"
+        className="max-w-xl mx-auto space-y-4"
+      >
         <div>
           <label className="block mb-1 font-medium">ชื่อสินค้า</label>
           <input
@@ -57,6 +77,7 @@ export default function AddProductPage() {
             value={proName}
             onChange={(e) => setProName(e.target.value)}
             required
+            autoComplete="off"
             className="w-full border border-gray-300 px-3 py-2 rounded"
           />
         </div>
@@ -69,6 +90,7 @@ export default function AddProductPage() {
             value={proPrice}
             onChange={(e) => setProPrice(e.target.value)}
             required
+            autoComplete="off"
             className="w-full border border-gray-300 px-3 py-2 rounded"
           />
         </div>
@@ -80,6 +102,7 @@ export default function AddProductPage() {
             value={proQuantity}
             onChange={(e) => setProQuantity(e.target.value)}
             required
+            autoComplete="off"
             className="w-full border border-gray-300 px-3 py-2 rounded"
           />
         </div>
@@ -91,6 +114,7 @@ export default function AddProductPage() {
             value={proDescription}
             onChange={(e) => setProDescription(e.target.value)}
             required
+            autoComplete="off"
             className="w-full border border-gray-300 px-3 py-2 rounded"
           />
         </div>
